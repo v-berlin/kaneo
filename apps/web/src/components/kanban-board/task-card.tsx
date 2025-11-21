@@ -93,12 +93,11 @@ function TaskCard({ task }: TaskCardProps) {
       queryClient.invalidateQueries({
         queryKey: ["tasks", project?.id],
       });
+      toast.success("Task deleted successfully");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to delete task",
       );
-    } finally {
-      toast.success("Task deleted successfully");
     }
   };
 

@@ -1,7 +1,9 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { subscribeToEvent } from "../events";
+import { canCommentOnTask } from "../utils/authorization";
 import toNormalCase from "../utils/to-normal-case";
 import createActivity from "./controllers/create-activity";
 import createComment from "./controllers/create-comment";
@@ -9,7 +11,11 @@ import deleteComment from "./controllers/delete-comment";
 import getActivitiesFromTaskId from "./controllers/get-activities";
 import updateComment from "./controllers/update-comment";
 
-const activity = new Hono()
+const activity = new Hono<{
+  Variables: {
+    userId: string;
+  };
+}>()
   .get(
     "/:taskId",
     zValidator("param", z.object({ taskId: z.string() })),
@@ -47,11 +53,19 @@ const activity = new Hono()
       z.object({
         taskId: z.string(),
         content: z.string(),
-        userId: z.string(),
       }),
     ),
     async (c) => {
-      const { taskId, content, userId } = c.req.valid("json");
+      const { taskId, content } = c.req.valid("json");
+      const userId = c.get("userId");
+
+      // Check if user can comment on this task
+      const hasCommentAccess = await canCommentOnTask(userId, taskId);
+      if (!hasCommentAccess) {
+        throw new HTTPException(403, {
+          message: "You do not have permission to comment on this task",
+        });
+      }
 
       const activity = await createComment(taskId, userId, content);
 
@@ -65,11 +79,11 @@ const activity = new Hono()
       z.object({
         id: z.string(),
         content: z.string(),
-        userId: z.string(),
       }),
     ),
     async (c) => {
-      const { id, content, userId } = c.req.valid("json");
+      const { id, content } = c.req.valid("json");
+      const userId = c.get("userId");
 
       const activity = await updateComment(userId, id, content);
 
@@ -82,11 +96,11 @@ const activity = new Hono()
       "json",
       z.object({
         id: z.string(),
-        userId: z.string(),
       }),
     ),
     async (c) => {
-      const { id, userId } = c.req.valid("json");
+      const { id } = c.req.valid("json");
+      const userId = c.get("userId");
 
       await deleteComment(userId, id);
 

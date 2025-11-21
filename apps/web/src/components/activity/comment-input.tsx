@@ -78,7 +78,6 @@ export default function CommentInput({ taskId, userId }: CommentInputProps) {
     try {
       await createComment({
         taskId,
-        userId,
         content,
       });
 
@@ -95,7 +94,7 @@ export default function CommentInput({ taskId, userId }: CommentInputProps) {
       console.error("Failed to create comment:", error);
       toast.error("Failed to add comment");
     }
-  }, [content, createComment, taskId, userId, editor, queryClient]);
+  }, [content, createComment, taskId, editor, queryClient]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
