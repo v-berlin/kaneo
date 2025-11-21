@@ -14,7 +14,11 @@ type ImportTask = {
   userId?: string | null;
 };
 
-async function importTasks(projectId: string, tasksToImport: ImportTask[]) {
+async function importTasks(
+  projectId: string,
+  tasksToImport: ImportTask[],
+  importedByUserId: string,
+) {
   const project = await db.query.projectTable.findFirst({
     where: eq(projectTable.id, projectId),
   });
@@ -43,6 +47,7 @@ async function importTasks(projectId: string, tasksToImport: ImportTask[]) {
           description: taskData.description || "",
           priority: taskData.priority || "low",
           number: ++taskNumber,
+          createdBy: importedByUserId,
         })
         .returning();
 

@@ -6,6 +6,7 @@ import {
   taskTable,
   workspaceUserTable,
 } from "../database/schema";
+import { ROLES } from "./roles";
 
 /**
  * Get the role of a user in a workspace
@@ -63,7 +64,7 @@ export async function canModifyTask(
   }
 
   // Teachers can only modify their own tasks
-  if (role === "lehrer") {
+  if (role === ROLES.LEHRER) {
     return task.createdBy === userId;
   }
 

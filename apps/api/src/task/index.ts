@@ -154,6 +154,16 @@ const task = new Hono<{
     zValidator("param", z.object({ projectId: z.string() })),
     async (c) => {
       const { projectId } = c.req.valid("param");
+      const userId = c.get("userId");
+
+      // Check read permission
+      const hasReadAccess = await canReadTasks(userId, projectId);
+      if (!hasReadAccess) {
+        throw new HTTPException(403, {
+          message:
+            "You do not have permission to export tasks from this project",
+        });
+      }
 
       const exportData = await exportTasks(projectId);
 
@@ -181,8 +191,17 @@ const task = new Hono<{
     async (c) => {
       const { projectId } = c.req.valid("param");
       const { tasks } = c.req.valid("json");
+      const currentUserId = c.get("userId");
 
-      const result = await importTasks(projectId, tasks);
+      // Check create permission
+      const hasCreateAccess = await canCreateTask(currentUserId, projectId);
+      if (!hasCreateAccess) {
+        throw new HTTPException(403, {
+          message: "You do not have permission to import tasks in this project",
+        });
+      }
+
+      const result = await importTasks(projectId, tasks, currentUserId);
 
       return c.json(result);
     },
