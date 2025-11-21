@@ -147,9 +147,14 @@ The role-based access control is implemented in the following locations:
    - `canCreateTask()`: Checks if a user can create tasks in a project
    - `canReadTasks()`: Checks if a user can view tasks in a project
 
-3. **Task Routes**: `apps/api/src/task/index.ts`
+3. **Role Constants**: `apps/api/src/utils/roles.ts`
+   - Defines role constants (ROLES.OWNER, ROLES.ADMIN, ROLES.MEMBER, ROLES.LEHRER)
+   - Prevents magic strings and improves code maintainability
+
+4. **Task Routes**: `apps/api/src/task/index.ts`
    - All task CRUD operations include authorization checks
    - Teachers are restricted based on task ownership
+   - Import and export operations also respect role permissions
 
 ## Migration
 
