@@ -164,3 +164,4 @@ WHERE email IN (
 ## Support
 
 If you need additional help or want to implement more complex permission models, please refer to the main Kaneo documentation or contact support.
+
