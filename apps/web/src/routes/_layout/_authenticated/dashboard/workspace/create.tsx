@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import useCreateWorkspace from "@/hooks/queries/workspace/use-create-workspace";
+import { useCanCreateWorkspace } from "@/hooks/use-can-create-workspace";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 
 export const Route = createFileRoute(
@@ -25,6 +26,15 @@ function RouteComponent() {
   const navigate = useNavigate();
   const { setActiveWorkspaceId } = useUserPreferencesStore();
   const { mutateAsync, isPending } = useCreateWorkspace();
+  const canCreateWorkspace = useCanCreateWorkspace();
+
+  // Redirect if user doesn't have permission
+  useEffect(() => {
+    if (!canCreateWorkspace) {
+      toast.error("You do not have permission to create workspaces");
+      navigate({ to: "/dashboard" });
+    }
+  }, [canCreateWorkspace, navigate]);
 
   useEffect(() => {
     if (inputRef.current) {

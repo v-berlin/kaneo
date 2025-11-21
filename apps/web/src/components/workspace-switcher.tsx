@@ -17,6 +17,7 @@ import { UserAvatar } from "@/components/user-avatar";
 import { shortcuts } from "@/constants/shortcuts";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import useGetWorkspaces from "@/hooks/queries/workspace/use-get-workspaces";
+import { useCanCreateWorkspace } from "@/hooks/use-can-create-workspace";
 import {
   getModifierKeyText,
   useRegisterShortcuts,
@@ -32,6 +33,7 @@ export function WorkspaceSwitcher() {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isCreateWorkspaceModalOpen, setIsCreateWorkspaceModalOpen] =
     React.useState(false);
+  const canCreateWorkspace = useCanCreateWorkspace();
 
   const handleWorkspaceChange = React.useCallback(
     async (selectedWorkspace: Workspace) => {
@@ -81,9 +83,11 @@ export function WorkspaceSwitcher() {
         [shortcuts.workspace.switch]: () => {
           setIsOpen(true);
         },
-        [shortcuts.workspace.create]: () => {
-          setIsCreateWorkspaceModalOpen(true);
-        },
+        ...(canCreateWorkspace && {
+          [shortcuts.workspace.create]: () => {
+            setIsCreateWorkspaceModalOpen(true);
+          },
+        }),
       },
     },
   });
@@ -161,23 +165,25 @@ export function WorkspaceSwitcher() {
 
                 <Separator />
 
-                <div className="p-1">
-                  <button
-                    type="button"
-                    className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-secondary/80 focus:bg-secondary/80 rounded-sm transition-colors text-sm font-normal"
-                    onClick={() => {
-                      setIsCreateWorkspaceModalOpen(true);
-                      setIsOpen(false);
-                    }}
-                  >
-                    <div className="bg-muted/20 border border-border/30 flex size-5 items-center justify-center rounded-sm">
-                      <Plus className="size-3 text-muted-foreground" />
-                    </div>
-                    <span className="text-muted-foreground flex-1 text-left">
-                      Add workspace
-                    </span>
-                  </button>
-                </div>
+                {canCreateWorkspace && (
+                  <div className="p-1">
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-secondary/80 focus:bg-secondary/80 rounded-sm transition-colors text-sm font-normal"
+                      onClick={() => {
+                        setIsCreateWorkspaceModalOpen(true);
+                        setIsOpen(false);
+                      }}
+                    >
+                      <div className="bg-muted/20 border border-border/30 flex size-5 items-center justify-center rounded-sm">
+                        <Plus className="size-3 text-muted-foreground" />
+                      </div>
+                      <span className="text-muted-foreground flex-1 text-left">
+                        Add workspace
+                      </span>
+                    </button>
+                  </div>
+                )}
               </PopoverContent>
             </Popover>
           </SidebarMenuItem>
@@ -186,10 +192,12 @@ export function WorkspaceSwitcher() {
         <UserAvatar />
       </div>
 
-      <CreateWorkspaceModal
-        open={isCreateWorkspaceModalOpen}
-        onClose={() => setIsCreateWorkspaceModalOpen(false)}
-      />
+      {canCreateWorkspace && (
+        <CreateWorkspaceModal
+          open={isCreateWorkspaceModalOpen}
+          onClose={() => setIsCreateWorkspaceModalOpen(false)}
+        />
+      )}
     </>
   );
 }

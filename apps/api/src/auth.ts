@@ -136,6 +136,18 @@ export const auth = betterAuth({
       },
       organizationCreation: {
         disabled: false,
+        beforeCreate: async ({ user }) => {
+          // Check if user has permission to create workspaces
+          const userRecord = await db
+            .select({ canCreateWorkspace: schema.userTable.canCreateWorkspace })
+            .from(schema.userTable)
+            .where(eq(schema.userTable.id, user.id))
+            .limit(1);
+
+          if (userRecord.length === 0 || !userRecord[0].canCreateWorkspace) {
+            throw new Error("You do not have permission to create workspaces");
+          }
+        },
         afterCreate: async ({ organization, user }) => {
           publishEvent("workspace.created", {
             workspaceId: organization.id,

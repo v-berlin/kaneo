@@ -24,6 +24,7 @@ import {
 import { KbdSequence } from "@/components/ui/kbd";
 import { shortcuts } from "@/constants/shortcuts";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
+import { useCanCreateWorkspace } from "@/hooks/use-can-create-workspace";
 import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 import CreateProjectModal from "../shared/modals/create-project-modal";
@@ -37,6 +38,7 @@ function CommandPalette() {
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isCreateWorkspaceOpen, setIsCreateWorkspaceOpen] = useState(false);
+  const canCreateWorkspace = useCanCreateWorkspace();
 
   useRegisterShortcuts({
     modifierShortcuts: {
@@ -53,11 +55,13 @@ function CommandPalette() {
       [shortcuts.project.prefix]: {
         [shortcuts.project.create]: () => setIsCreateProjectOpen(true),
       },
-      [shortcuts.workspace.prefix]: {
-        [shortcuts.workspace.create]: () => {
-          setIsCreateWorkspaceOpen(true);
+      ...(canCreateWorkspace && {
+        [shortcuts.workspace.prefix]: {
+          [shortcuts.workspace.create]: () => {
+            setIsCreateWorkspaceOpen(true);
+          },
         },
-      },
+      }),
     },
   });
 
@@ -104,21 +108,26 @@ function CommandPalette() {
                 description="Create project"
               />
             </CommandItem>
-            <CommandItem
-              onSelect={() => {
-                runCommand(() => {
-                  setIsCreateWorkspaceOpen(true);
-                });
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              <span>Create workspace</span>
-              <KbdSequence
-                keys={[shortcuts.workspace.prefix, shortcuts.workspace.create]}
-                className="ml-auto"
-                description="Create workspace"
-              />
-            </CommandItem>
+            {canCreateWorkspace && (
+              <CommandItem
+                onSelect={() => {
+                  runCommand(() => {
+                    setIsCreateWorkspaceOpen(true);
+                  });
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                <span>Create workspace</span>
+                <KbdSequence
+                  keys={[
+                    shortcuts.workspace.prefix,
+                    shortcuts.workspace.create,
+                  ]}
+                  className="ml-auto"
+                  description="Create workspace"
+                />
+              </CommandItem>
+            )}
           </CommandGroup>
 
           <CommandGroup heading="Navigation">
@@ -226,10 +235,12 @@ function CommandPalette() {
         open={isCreateTaskOpen}
         onClose={() => setIsCreateTaskOpen(false)}
       />
-      <CreateWorkspaceModal
-        open={isCreateWorkspaceOpen}
-        onClose={() => setIsCreateWorkspaceOpen(false)}
-      />
+      {canCreateWorkspace && (
+        <CreateWorkspaceModal
+          open={isCreateWorkspaceOpen}
+          onClose={() => setIsCreateWorkspaceOpen(false)}
+        />
+      )}
       <CreateProjectModal
         open={isCreateProjectOpen}
         onClose={() => setIsCreateProjectOpen(false)}
