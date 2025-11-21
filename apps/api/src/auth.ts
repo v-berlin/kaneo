@@ -144,7 +144,13 @@ export const auth = betterAuth({
             .where(eq(schema.userTable.id, user.id))
             .limit(1);
 
-          if (!userData?.canCreateWorkspace) {
+          // If user not found, allow creation (shouldn't happen but fail open)
+          if (!userData) {
+            return;
+          }
+
+          // Check if user has permission to create workspaces
+          if (userData.canCreateWorkspace === false) {
             throw new Error(
               "You do not have permission to create workspaces. Please contact an administrator.",
             );
