@@ -42,10 +42,9 @@ import { useUserPreferencesStore } from "@/store/user-preferences";
 
 interface CommentInputProps {
   taskId: string;
-  userId: string;
 }
 
-export default function CommentInput({ taskId, userId }: CommentInputProps) {
+export default function CommentInput({ taskId }: CommentInputProps) {
   const { theme } = useUserPreferencesStore();
   const [content, setContent] = useState("");
   const { mutateAsync: createComment, isPending } = useCreateComment();
