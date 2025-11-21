@@ -67,8 +67,8 @@ POSTGRES_DB=kaneo
 POSTGRES_USER=dein_user
 POSTGRES_PASSWORD=dein_sicheres_passwort
 
-# Authentication (generiere einen sicheren Schlüssel)
-AUTH_SECRET=$(openssl rand -hex 32)
+# Authentication (generiere einen sicheren Schlüssel mit: openssl rand -hex 32)
+AUTH_SECRET=dein_generierter_auth_secret_hier_einfuegen
 
 # Optional: GitHub Integration
 GITHUB_CLIENT_ID=deine_github_client_id
@@ -105,7 +105,9 @@ docker buildx build \
   .
 ```
 
-**Wichtig:** Der Build-Kontext muss das Root-Verzeichnis sein (`.`), nicht `apps/api/`, da die Dockerfiles auf Workspace-Packages zugreifen.
+**Wichtig:** 
+- Der Build-Kontext muss das Root-Verzeichnis sein (`.`), nicht `apps/api/`, da die Dockerfiles auf Workspace-Packages zugreifen.
+- Bei Multi-Platform Builds (`--platform linux/amd64,linux/arm64`) muss `--push` verwendet werden, um direkt zu einer Registry zu pushen. Für lokale Tests ohne Push, verwende nur eine Platform oder baue ohne `--platform` Flag.
 
 ### 4. Web Image bauen
 
@@ -151,7 +153,7 @@ docker buildx build \
   -t ${REGISTRY}/kaneo-api:${VERSION} \
   -t ${REGISTRY}/kaneo-api:latest \
   -f apps/api/Dockerfile \
-  --load \
+  --push \
   .
 
 # Web Image bauen
@@ -161,7 +163,7 @@ docker buildx build \
   -t ${REGISTRY}/kaneo-web:${VERSION} \
   -t ${REGISTRY}/kaneo-web:latest \
   -f apps/web/Dockerfile \
-  --load \
+  --push \
   .
 
 echo -e "${GREEN}Build complete!${NC}"
@@ -174,8 +176,15 @@ Ausführen:
 
 ```bash
 chmod +x build-custom.sh
+
+# Erst bei deiner Registry einloggen (da --push verwendet wird)
+docker login
+
+# Dann Script ausführen
 ./build-custom.sh 1.0.0
 ```
+
+**Hinweis:** Das Script verwendet `--push`, um Multi-Platform Builds zu ermöglichen. Du musst vorher bei deiner Container Registry eingeloggt sein.
 
 ## Images zu einer Custom Registry pushen
 
@@ -977,11 +986,32 @@ kubectl exec -it -n kaneo kaneo-api-xxx -- /bin/sh
 **Problem:** Database Migration läuft nicht
 
 ```bash
-# Migration Job manuell erstellen
-kubectl create job -n kaneo db-migrate \
-  --from=cronjob/kaneo-api \
-  --image=dein-username/kaneo-api:latest \
-  -- sh -c "cd /app/apps/api && pnpm drizzle-kit migrate"
+# Migration Job manuell erstellen (basierend auf dem Deployment)
+cat <<EOF | kubectl apply -f -
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  namespace: kaneo
+spec:
+  template:
+    spec:
+      containers:
+      - name: migrate
+        image: dein-username/kaneo-api:latest
+        command: ["sh", "-c", "cd /app/apps/api && npx drizzle-kit migrate"]
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: kaneo-secrets
+              key: database-url
+      restartPolicy: Never
+  backoffLimit: 3
+EOF
+
+# Job Status prüfen
+kubectl get job -n kaneo db-migrate
 
 # Job Logs ansehen
 kubectl logs -n kaneo job/db-migrate
