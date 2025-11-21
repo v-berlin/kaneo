@@ -50,6 +50,9 @@ Erstelle deine eigene `.env` Datei basierend auf dem Sample:
 # Kopiere die Sample-Datei
 cp .env.sample .env
 
+# Generiere einen sicheren AUTH_SECRET
+openssl rand -hex 32
+
 # Bearbeite die .env Datei mit deinen Werten
 nano .env
 ```
@@ -67,7 +70,8 @@ POSTGRES_DB=kaneo
 POSTGRES_USER=dein_user
 POSTGRES_PASSWORD=dein_sicheres_passwort
 
-# Authentication (generiere einen sicheren Schlüssel mit: openssl rand -hex 32)
+# Authentication
+# Verwende den oben generierten Wert von 'openssl rand -hex 32'
 AUTH_SECRET=dein_generierter_auth_secret_hier_einfuegen
 
 # Optional: GitHub Integration
