@@ -169,7 +169,6 @@ export default function CommentCard({
     try {
       await updateComment({
         id: commentId,
-        userId: currentUser.id,
         content: editedContent,
       });
 

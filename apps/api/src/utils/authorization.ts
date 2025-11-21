@@ -125,3 +125,46 @@ export async function canReadTasks(
 
   return role !== null;
 }
+
+/**
+ * Check if a user can comment on a task
+ * Teachers (lehrer role) can only comment on their own tasks
+ * Other roles can comment on any task in their workspace
+ */
+export async function canCommentOnTask(
+  userId: string,
+  taskId: string,
+): Promise<boolean> {
+  // Get the task with its project info
+  const [task] = await db
+    .select({
+      taskId: taskTable.id,
+      createdBy: taskTable.createdBy,
+      workspaceId: projectTable.workspaceId,
+    })
+    .from(taskTable)
+    .innerJoin(projectTable, eq(taskTable.projectId, projectTable.id))
+    .where(eq(taskTable.id, taskId))
+    .limit(1);
+
+  if (!task) {
+    throw new HTTPException(404, {
+      message: "Task not found",
+    });
+  }
+
+  // Get user's role in the workspace
+  const role = await getUserWorkspaceRole(userId, task.workspaceId);
+
+  if (!role) {
+    return false;
+  }
+
+  // Teachers can only comment on their own tasks
+  if (role === ROLES.LEHRER) {
+    return task.createdBy === userId;
+  }
+
+  // Other roles (admin, member, owner) can comment on any task
+  return true;
+}
