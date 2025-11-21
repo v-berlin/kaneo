@@ -168,3 +168,28 @@ export async function canCommentOnTask(
   // Other roles (admin, member, owner) can comment on any task
   return true;
 }
+
+/**
+ * Check if a user can create projects in a workspace
+ * Teachers (lehrer role) cannot create projects
+ * Other roles (admin, member, owner) can create projects
+ */
+export async function canCreateProject(
+  userId: string,
+  workspaceId: string,
+): Promise<boolean> {
+  // Get user's role in the workspace
+  const role = await getUserWorkspaceRole(userId, workspaceId);
+
+  if (!role) {
+    return false;
+  }
+
+  // Teachers cannot create projects
+  if (role === ROLES.LEHRER) {
+    return false;
+  }
+
+  // Other roles (admin, member, owner) can create projects
+  return true;
+}

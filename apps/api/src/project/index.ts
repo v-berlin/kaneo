@@ -1,13 +1,19 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
+import { canCreateProject } from "../utils/authorization";
 import createProject from "./controllers/create-project";
 import deleteProject from "./controllers/delete-project";
 import getProject from "./controllers/get-project";
 import getProjects from "./controllers/get-projects";
 import updateProject from "./controllers/update-project";
 
-const project = new Hono()
+const project = new Hono<{
+  Variables: {
+    userId: string;
+  };
+}>()
   .get(
     "/",
     zValidator("query", z.object({ workspaceId: z.string() })),
@@ -30,6 +36,17 @@ const project = new Hono()
     ),
     async (c) => {
       const { name, workspaceId, icon, slug } = c.req.valid("json");
+      const userId = c.get("userId");
+
+      // Check create permission
+      const hasCreateAccess = await canCreateProject(userId, workspaceId);
+      if (!hasCreateAccess) {
+        throw new HTTPException(403, {
+          message:
+            "You do not have permission to create projects in this workspace",
+        });
+      }
+
       const project = await createProject(workspaceId, name, icon, slug);
       return c.json(project);
     },
