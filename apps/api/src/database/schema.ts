@@ -21,6 +21,9 @@ export const userTable = pgTable("user", {
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
   isAnonymous: boolean("is_anonymous"),
+  canCreateWorkspace: boolean("can_create_workspace")
+    .$defaultFn(() => true)
+    .notNull(),
 });
 
 export const sessionTable = pgTable("session", {

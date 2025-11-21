@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "can_create_workspace" boolean DEFAULT true NOT NULL;
