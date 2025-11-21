@@ -13,6 +13,7 @@ async function createTask({
   dueDate,
   description,
   priority,
+  createdBy,
 }: {
   projectId: string;
   userId?: string;
@@ -21,6 +22,7 @@ async function createTask({
   dueDate?: Date;
   description?: string;
   priority?: string;
+  createdBy: string;
 }) {
   const [assignee] = await db
     .select({ name: userTable.name })
@@ -40,6 +42,7 @@ async function createTask({
       description: description || "",
       priority: priority || "",
       number: nextTaskNumber + 1,
+      createdBy,
     })
     .returning();
 

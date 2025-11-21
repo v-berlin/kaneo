@@ -1,8 +1,14 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { auth } from "../auth";
 import { publishEvent } from "../events";
+import {
+  canCreateTask,
+  canModifyTask,
+  canReadTasks,
+} from "../utils/authorization";
 import createTask from "./controllers/create-task";
 import deleteTask from "./controllers/delete-task";
 import exportTasks from "./controllers/export-tasks";
@@ -27,6 +33,15 @@ const task = new Hono<{
     zValidator("param", z.object({ projectId: z.string() })),
     async (c) => {
       const { projectId } = c.req.valid("param");
+      const userId = c.get("userId");
+
+      // Check read permission
+      const hasReadAccess = await canReadTasks(userId, projectId);
+      if (!hasReadAccess) {
+        throw new HTTPException(403, {
+          message: "You do not have permission to view tasks in this project",
+        });
+      }
 
       const tasks = await getTasks(projectId);
 
@@ -50,6 +65,15 @@ const task = new Hono<{
       const { projectId } = c.req.param();
       const { title, description, dueDate, priority, status, userId } =
         c.req.valid("json");
+      const currentUserId = c.get("userId");
+
+      // Check create permission
+      const hasCreateAccess = await canCreateTask(currentUserId, projectId);
+      if (!hasCreateAccess) {
+        throw new HTTPException(403, {
+          message: "You do not have permission to create tasks in this project",
+        });
+      }
 
       const task = await createTask({
         projectId,
@@ -59,6 +83,7 @@ const task = new Hono<{
         dueDate: dueDate ? new Date(dueDate) : undefined,
         priority,
         status,
+        createdBy: currentUserId,
       });
 
       return c.json(task);
@@ -99,6 +124,15 @@ const task = new Hono<{
         position,
         userId,
       } = c.req.valid("json");
+      const currentUserId = c.get("userId");
+
+      // Check modify permission
+      const hasModifyAccess = await canModifyTask(currentUserId, id);
+      if (!hasModifyAccess) {
+        throw new HTTPException(403, {
+          message: "You do not have permission to modify this task",
+        });
+      }
 
       const task = await updateTask(
         id,
@@ -120,6 +154,16 @@ const task = new Hono<{
     zValidator("param", z.object({ projectId: z.string() })),
     async (c) => {
       const { projectId } = c.req.valid("param");
+      const userId = c.get("userId");
+
+      // Check read permission
+      const hasReadAccess = await canReadTasks(userId, projectId);
+      if (!hasReadAccess) {
+        throw new HTTPException(403, {
+          message:
+            "You do not have permission to export tasks from this project",
+        });
+      }
 
       const exportData = await exportTasks(projectId);
 
@@ -147,8 +191,17 @@ const task = new Hono<{
     async (c) => {
       const { projectId } = c.req.valid("param");
       const { tasks } = c.req.valid("json");
+      const currentUserId = c.get("userId");
 
-      const result = await importTasks(projectId, tasks);
+      // Check create permission
+      const hasCreateAccess = await canCreateTask(currentUserId, projectId);
+      if (!hasCreateAccess) {
+        throw new HTTPException(403, {
+          message: "You do not have permission to import tasks in this project",
+        });
+      }
+
+      const result = await importTasks(projectId, tasks, currentUserId);
 
       return c.json(result);
     },
@@ -158,6 +211,15 @@ const task = new Hono<{
     zValidator("param", z.object({ id: z.string() })),
     async (c) => {
       const { id } = c.req.valid("param");
+      const currentUserId = c.get("userId");
+
+      // Check modify permission (delete requires same permissions as modify)
+      const hasModifyAccess = await canModifyTask(currentUserId, id);
+      if (!hasModifyAccess) {
+        throw new HTTPException(403, {
+          message: "You do not have permission to delete this task",
+        });
+      }
 
       const task = await deleteTask(id);
 
@@ -172,6 +234,14 @@ const task = new Hono<{
       const { id } = c.req.valid("param");
       const { status } = c.req.valid("json");
       const user = c.get("userId");
+
+      // Check modify permission
+      const hasModifyAccess = await canModifyTask(user, id);
+      if (!hasModifyAccess) {
+        throw new HTTPException(403, {
+          message: "You do not have permission to modify this task",
+        });
+      }
 
       const task = await updateTaskStatus({ id, status });
 
@@ -196,6 +266,14 @@ const task = new Hono<{
       const { priority } = c.req.valid("json");
       const user = c.get("userId");
 
+      // Check modify permission
+      const hasModifyAccess = await canModifyTask(user, id);
+      if (!hasModifyAccess) {
+        throw new HTTPException(403, {
+          message: "You do not have permission to modify this task",
+        });
+      }
+
       const task = await updateTaskPriority({ id, priority });
 
       await publishEvent("task.priority_changed", {
@@ -218,6 +296,14 @@ const task = new Hono<{
       const { id } = c.req.valid("param");
       const { userId } = c.req.valid("json");
       const user = c.get("userId");
+
+      // Check modify permission
+      const hasModifyAccess = await canModifyTask(user, id);
+      if (!hasModifyAccess) {
+        throw new HTTPException(403, {
+          message: "You do not have permission to modify this task",
+        });
+      }
 
       const task = await updateTaskAssignee({ id, userId });
 
@@ -260,6 +346,14 @@ const task = new Hono<{
       const { dueDate } = c.req.valid("json");
       const user = c.get("userId");
 
+      // Check modify permission
+      const hasModifyAccess = await canModifyTask(user, id);
+      if (!hasModifyAccess) {
+        throw new HTTPException(403, {
+          message: "You do not have permission to modify this task",
+        });
+      }
+
       const task = await updateTaskDueDate({ id, dueDate: new Date(dueDate) });
 
       await publishEvent("task.due_date_changed", {
@@ -284,6 +378,14 @@ const task = new Hono<{
       const { title } = c.req.valid("json");
       const user = c.get("userId");
 
+      // Check modify permission
+      const hasModifyAccess = await canModifyTask(user, id);
+      if (!hasModifyAccess) {
+        throw new HTTPException(403, {
+          message: "You do not have permission to modify this task",
+        });
+      }
+
       const task = await updateTaskTitle({ id, title });
 
       await publishEvent("task.title_changed", {
@@ -307,6 +409,14 @@ const task = new Hono<{
       const { id } = c.req.valid("param");
       const { description } = c.req.valid("json");
       const user = c.get("userId");
+
+      // Check modify permission
+      const hasModifyAccess = await canModifyTask(user, id);
+      if (!hasModifyAccess) {
+        throw new HTTPException(403, {
+          message: "You do not have permission to modify this task",
+        });
+      }
 
       const task = await updateTaskDescription({ id, description });
 

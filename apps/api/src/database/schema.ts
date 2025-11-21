@@ -179,6 +179,10 @@ export const taskTable = pgTable("task", {
     onDelete: "cascade",
     onUpdate: "cascade",
   }),
+  createdBy: text("created_by").references(() => userTable.id, {
+    onDelete: "set null",
+    onUpdate: "cascade",
+  }),
   title: text("title").notNull(),
   description: text("description"),
   status: text("status").notNull().default("to-do"),
