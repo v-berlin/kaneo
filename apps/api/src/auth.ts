@@ -3,7 +3,6 @@ import bcrypt from "bcrypt";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import {
-  anonymous,
   createAuthMiddleware,
   lastLoginMethod,
   magicLink,
@@ -13,7 +12,6 @@ import { config } from "dotenv-mono";
 import { eq } from "drizzle-orm";
 import db, { schema } from "./database";
 import { publishEvent } from "./events";
-import { generateDemoName } from "./utils/generate-demo-name";
 import { getRoleForEmail, ROLES } from "./utils/roles";
 
 config();
@@ -79,10 +77,6 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    anonymous({
-      generateName: async () => generateDemoName(),
-      emailDomainName: "kaneo.com",
-    }),
     lastLoginMethod(),
     magicLink({
       sendMagicLink: async ({ email, url }) => {
