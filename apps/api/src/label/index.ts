@@ -1,6 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
+import { canAssignLabelToTask } from "../utils/authorization";
 import createLabel from "./controllers/create-label";
 import deleteLabel from "./controllers/delete-label";
 import getLabel from "./controllers/get-label";
@@ -44,14 +46,41 @@ const label = new Hono<{
     ),
     async (c) => {
       const { name, color, taskId, workspaceId } = c.req.valid("json");
+      const userId = c.get("userId");
+
+      // Check if user can assign label to this task (if taskId is provided)
+      if (taskId) {
+        const hasAssignAccess = await canAssignLabelToTask(userId, taskId);
+        if (!hasAssignAccess) {
+          throw new HTTPException(403, {
+            message: "You do not have permission to assign labels to this task",
+          });
+        }
+      }
+
       const label = await createLabel(name, color, taskId, workspaceId);
       return c.json(label);
     },
   )
   .delete("/:id", async (c) => {
     const { id } = c.req.param();
-    const label = await deleteLabel(id);
-    return c.json(label);
+    const userId = c.get("userId");
+
+    // Get the label to check if it's associated with a task
+    const label = await getLabel(id);
+
+    // Check if user can remove label from this task (if taskId exists)
+    if (label.taskId) {
+      const hasAssignAccess = await canAssignLabelToTask(userId, label.taskId);
+      if (!hasAssignAccess) {
+        throw new HTTPException(403, {
+          message: "You do not have permission to remove labels from this task",
+        });
+      }
+    }
+
+    const deletedLabel = await deleteLabel(id);
+    return c.json(deletedLabel);
   })
   .get("/:id", zValidator("param", z.object({ id: z.string() })), async (c) => {
     const { id } = c.req.valid("param");
