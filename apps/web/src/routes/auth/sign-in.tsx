@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Github, UserCheck } from "lucide-react";
+import { Github } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import PageTitle from "@/components/page-title";
@@ -19,29 +19,10 @@ export const Route = createFileRoute("/auth/sign-in")({
 
 function SignIn() {
   const navigate = useNavigate();
-  const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [isGithubLoading, setIsGithubLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const lastLoginMethod = authClient.getLastUsedLoginMethod();
   const { data: config, isLoading: isConfigLoading } = useGetConfig();
-
-  const handleGuestAccess = async () => {
-    setIsGuestLoading(true);
-    try {
-      const result = await authClient.signIn.anonymous();
-      if (result.error) {
-        throw new Error(result.error.message);
-      }
-      toast.success("Signed in as guest");
-      navigate({ to: "/dashboard" });
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to sign in as guest",
-      );
-    } finally {
-      setIsGuestLoading(false);
-    }
-  };
 
   const handleSignInGoogle = async () => {
     setIsGoogleLoading(true);
@@ -58,10 +39,12 @@ function SignIn() {
       navigate({ to: "/dashboard" });
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to sign in as guest",
+        error instanceof Error
+          ? error.message
+          : "Failed to sign in with Google",
       );
     } finally {
-      setIsGuestLoading(false);
+      setIsGoogleLoading(false);
     }
   };
 
@@ -159,16 +142,6 @@ function SignIn() {
                 </Button>
               )}
             </div>
-            <Button
-              variant="outline"
-              onClick={handleGuestAccess}
-              disabled={isGuestLoading}
-              className="w-full"
-              size="sm"
-            >
-              <UserCheck className="w-4 h-4 mr-2" />
-              {isGuestLoading ? "Signing in..." : "Continue as guest"}
-            </Button>
           </div>
           <div className="flex items-center gap-4 my-4">
             <div className="flex-1 h-px bg-border" />
