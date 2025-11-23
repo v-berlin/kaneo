@@ -23,11 +23,16 @@ export function getRoleForEmail(
   email: string,
   defaultRole: Role = ROLES.MEMBER,
 ): Role {
+  // Return default role if email is not provided
+  if (!email) {
+    return defaultRole;
+  }
+
   // Normalize email to lowercase for comparison
   const normalizedEmail = email.toLowerCase().trim();
 
   // Extract the domain part (everything after @)
-  const atIndex = normalizedEmail.lastIndexOf("@");
+  const atIndex = normalizedEmail.indexOf("@");
   if (atIndex === -1) {
     return defaultRole;
   }

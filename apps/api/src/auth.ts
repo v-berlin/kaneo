@@ -167,6 +167,11 @@ export const auth = betterAuth({
       },
       organizationHooks: {
         afterAcceptInvitation: async ({ member, user }) => {
+          // Only assign role if user has an email
+          if (!user.email) {
+            return;
+          }
+
           // Assign role based on email domain when accepting invitation
           const role = getRoleForEmail(user.email, ROLES.MEMBER);
 
