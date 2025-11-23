@@ -39,10 +39,12 @@ function SignIn() {
       navigate({ to: "/dashboard" });
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to sign in as guest",
+        error instanceof Error
+          ? error.message
+          : "Failed to sign in with Google",
       );
     } finally {
-      setIsGuestLoading(false);
+      setIsGoogleLoading(false);
     }
   };
 
