@@ -14,6 +14,7 @@ import { eq } from "drizzle-orm";
 import db, { schema } from "./database";
 import { publishEvent } from "./events";
 import { generateDemoName } from "./utils/generate-demo-name";
+import { getRoleForEmail, ROLES } from "./utils/roles";
 
 config();
 
@@ -156,12 +157,38 @@ export const auth = betterAuth({
             );
           }
         },
-        afterCreate: async ({ organization, user }) => {
+        afterCreate: async ({ organization, member, user }) => {
+          // Assign role based on email domain for workspace creator
+          // When creating a workspace, user with @ong.berlin should get lehrer role instead of owner
+          const role = getRoleForEmail(user.email, ROLES.OWNER);
+
+          // Update member role if it should be different from the default
+          if (role !== member.role) {
+            await db
+              .update(schema.workspaceUserTable)
+              .set({ role })
+              .where(eq(schema.workspaceUserTable.id, member.id));
+          }
+
           publishEvent("workspace.created", {
             workspaceId: organization.id,
             workspaceName: organization.name,
             ownerEmail: user.name,
           });
+        },
+      },
+      organizationHooks: {
+        afterAcceptInvitation: async ({ member, user }) => {
+          // Assign role based on email domain when accepting invitation
+          const role = getRoleForEmail(user.email, ROLES.MEMBER);
+
+          // Update member role if it should be different from the default
+          if (role !== member.role) {
+            await db
+              .update(schema.workspaceUserTable)
+              .set({ role })
+              .where(eq(schema.workspaceUserTable.id, member.id));
+          }
         },
       },
       async sendInvitationEmail(data) {
