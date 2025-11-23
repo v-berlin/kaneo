@@ -157,19 +157,7 @@ export const auth = betterAuth({
             );
           }
         },
-        afterCreate: async ({ organization, member, user }) => {
-          // Assign role based on email domain for workspace creator
-          // When creating a workspace, user with @ong.berlin should get lehrer role instead of owner
-          const role = getRoleForEmail(user.email, ROLES.OWNER);
-
-          // Update member role if it should be different from the default
-          if (role !== member.role) {
-            await db
-              .update(schema.workspaceUserTable)
-              .set({ role })
-              .where(eq(schema.workspaceUserTable.id, member.id));
-          }
-
+        afterCreate: async ({ organization, user }) => {
           publishEvent("workspace.created", {
             workspaceId: organization.id,
             workspaceName: organization.name,

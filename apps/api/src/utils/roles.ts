@@ -26,11 +26,15 @@ export function getRoleForEmail(
   // Normalize email to lowercase for comparison
   const normalizedEmail = email.toLowerCase().trim();
 
-  // Check if email ends with @ong.berlin but NOT @student.ong.berlin
-  if (
-    normalizedEmail.endsWith("@ong.berlin") &&
-    !normalizedEmail.endsWith("@student.ong.berlin")
-  ) {
+  // Extract the domain part (everything after @)
+  const atIndex = normalizedEmail.lastIndexOf("@");
+  if (atIndex === -1) {
+    return defaultRole;
+  }
+  const domain = normalizedEmail.substring(atIndex + 1);
+
+  // Check if domain is exactly "ong.berlin" (not "student.ong.berlin")
+  if (domain === "ong.berlin") {
     return ROLES.LEHRER;
   }
 
